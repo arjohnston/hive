@@ -11,6 +11,7 @@ const cp = require('child_process')
 // Models for API testing. These should replicate the header
 // that's required for the API
 const postModel = require('./models/Post.js')
+const getModel = require('./models/Get.js')
 
 // Get the arguments passed into this file
 // For example: node run.js --post
@@ -45,6 +46,7 @@ class Run {
 
     // Instantiate the variables for the API to be ran
     this.template = null
+    this.ipAddress = null
     this.apiUrl = null
     this.rateLimit = null
     this.dependencies = []
@@ -64,6 +66,14 @@ class Run {
 
     // Get the data from the model passed in
     switch (model) {
+      case 'Get':
+        fetchedModel.apiUrl = getModel.apiUrl
+        fetchedModel.rateLimit = getModel.rateLimit
+        fetchedModel.dependencies = getModel.dependencies
+        fetchedModel.templateLoaded = 'Get'
+        fetchedModel.template = getModel.template
+        break
+      
       case 'Post':
         fetchedModel.apiUrl = postModel.apiUrl
         fetchedModel.rateLimit = postModel.rateLimit
@@ -110,9 +120,23 @@ class Run {
     let model = {}
 
     // Set the model for the Register API
+    if (args.toString().toLowerCase().includes('get')) {
+      model = this.fetchModel('Get')
+    }
+
     if (args.toString().toLowerCase().includes('post')) {
       model = this.fetchModel('Post')
     }
+
+    if (args.toString().toLowerCase().includes('put')) {
+      model = this.fetchModel('Put')
+    }
+
+    if (args.toString().toLowerCase().includes('delete')) {
+      model = this.fetchModel('Delete')
+    }
+
+    this.ipAddress = args.splice(2)[1];
 
     // Set the variables with the model information
     this.apiUrl = model.apiUrl
@@ -125,8 +149,17 @@ class Run {
     if (this.apiUrl === '') {
       console.log('You must enter the type of POST to run:')
       console.log()
+      console.log('--get')
+      console.log('Creates the amount of get requests specified in the file.')
+      console.log()
       console.log('--post')
       console.log('Creates the amount of post requests specified in the file.')
+      console.log()
+      console.log('--put')
+      console.log('Creates the amount of put requests specified in the file.')
+      console.log()
+      console.log('--delete')
+      console.log('Creates the amount of delete requests specified in the file.')
 
       // Exit the program
       return
@@ -338,7 +371,7 @@ class Run {
 
     // Process the dependencies before testing the API
     // Could be refactored recursively to include nested dependencies
-    if (this.dependencies.length > 0) {
+    if (this.dependencies && this.dependencies.length > 0) {
       // Array to hold all promises
       const promises = []
 
@@ -355,7 +388,7 @@ class Run {
           // Spawn the test for the associated dependency model
           // Throttle is wrapped around spawn tests to batch process the tests
           // in the case there is a rate limit
-          throttle(this.spawnTests, model.template, options.howManyRequestsToSpawn, model.rateLimit, model.apiUrl, modelName)
+          throttle(this.spawnTests, model.template, options.howManyRequestsToSpawn, model.rateLimit, `${this.ipAddress}${this.apiUrl}`, modelName)
             .then(() => {
               // Once successful, resolve
               resolve()
@@ -381,7 +414,7 @@ class Run {
 
     // Spawn the test for the associated model
     // Throttle is wrapped to batch process the tests if there is a rate limit
-    throttle(this.spawnTests, this.model, options.howManyRequestsToSpawn, this.rateLimit, this.apiUrl)
+    throttle(this.spawnTests, this.model, options.howManyRequestsToSpawn, this.rateLimit, `${this.ipAddress}${this.apiUrl}`)
       .then(() => {
         // Once the test has been compeleted, log the associated information
         this.logger.currentRequestCount = this.currentRequestCount

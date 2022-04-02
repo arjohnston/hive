@@ -14,7 +14,7 @@ module.exports = {
   nameSeed: 'Test User',
 
   // Set the below integer to how many times the POST request should for
-  howManyRequestsToSpawn: 1,
+  howManyRequestsToSpawn: 10000,
 
   // How long to wait for the API to respond before timing out
   timeoutDuration: 120 // seconds
