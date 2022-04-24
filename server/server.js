@@ -13,6 +13,7 @@ const port = 3000
 startServer()
 
 function startServer() {
+    const fs = require('fs');
     // Return if healthy
     app.get('/health', (req, res) => {
         res.sendStatus(200)
@@ -20,27 +21,46 @@ function startServer() {
 
     // Get the specific record
     app.get('/', (req, res) => {
-        res.status(200).send('Hello World!')
+        let rawData = fs.readFileSync('db.json')
+        let db = JSON.parse(rawData)
+
+        // Get a record based on the URI passed && return it
+
+        res.sendStatus(200)
     })
     
     // Create the specific record
     app.post('/', (req, res) => {
-        res.status(200).send('Got a POST request')
+        let rawData = fs.readFileSync('db.json')
+        let db = JSON.parse(rawData)
+        db.push(req.body)
+
+        const newData = JSON.stringify(db);
+
+        try {
+            fs.writeFile('db.json', newData, (err) => {
+                if (err) throw err
+            })
+        } catch {
+            res.sendStatus(500) // Internal Server Error
+        }
+        
+        res.sendStatus(200) // OK
     })
     
     // Update the specific record
     app.put('/user', (req, res) => {
-        res.send('Got a PUT request at /user')
+        // res.send('Got a PUT request at /user')
     })
     
     // Remove the specified record
     app.delete('/user', (req, res) => {
-        res.send('Got a DELETE request at /user')
+        // res.send('Got a DELETE request at /user')
     })
 
     // Remove the entire database
     app.delete('/clear', (req, res) => {
-        res.send('Got a clear request')
+        // res.send('Got a clear request')
     })
     
     app.listen(port, '0.0.0.0', () => {
