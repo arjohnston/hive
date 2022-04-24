@@ -12,6 +12,9 @@ const cp = require('child_process')
 // that's required for the API
 const postModel = require('./models/Post.js')
 const getModel = require('./models/Get.js')
+const getModel = require('./models/Put.js')
+const getModel = require('./models/Delete.js')
+const getModel = require('./models/Health.js')
 
 // Get the arguments passed into this file
 // For example: node run.js --post
@@ -136,6 +139,10 @@ class Run {
       model = this.fetchModel('Delete')
     }
 
+    if (args.toString().toLowerCase().includes('health')) {
+      model = this.fetchModel('Health')
+    }
+
     this.ipAddress = args.splice(2)[1];
 
     // Set the variables with the model information
@@ -160,6 +167,9 @@ class Run {
       console.log()
       console.log('--delete')
       console.log('Creates the amount of delete requests specified in the file.')
+      console.log()
+      console.log('--health')
+      console.log('Creates the amount of health check requests specified in the file.')
 
       // Exit the program
       return

@@ -2,7 +2,12 @@ const options = require('../options.js')
 
 module.exports = {
   dependencies: ['Post'],
-  apiUrl: '/',
+  apiUrl: '/user',
   rateLimit: 1150,
-  template: {}
+  template: {
+    name: {
+      seed: options.nameSeed,
+      unique: false
+    },
+  }
 }

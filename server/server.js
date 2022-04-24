@@ -13,6 +13,10 @@ const port = 3000
 startServer()
 
 function startServer() {
+    app.get('/health', (req, res) => {
+        res.sendStatus(200)
+    })
+
     app.get('/', (req, res) => {
         res.status(200).send('Hello World!')
     })
