@@ -37,7 +37,7 @@ class Run {
     // Function definitions with binding this to associate
     // calls to the function with this instantiated class
     this.checkArgs = this.checkArgs.bind(this)
-    this.runPostCmd = this.runPostCmd.bind(this)
+    this.runCmd = this.runCmd.bind(this)
     this.run = this.run.bind(this)
     this.fetchModel = this.fetchModel.bind(this)
     this.generateHeader = this.generateHeader.bind(this)
@@ -51,6 +51,7 @@ class Run {
     this.template = null
     this.ipAddress = null
     this.apiUrl = null
+    this.apiType = null
     this.rateLimit = null
     this.dependencies = []
     this.templateLoaded = null
@@ -71,6 +72,7 @@ class Run {
     switch (model) {
       case 'Get':
         fetchedModel.apiUrl = getModel.apiUrl
+        fetchedModel.apiType = getModel.apiType
         fetchedModel.rateLimit = getModel.rateLimit
         fetchedModel.dependencies = getModel.dependencies
         fetchedModel.templateLoaded = 'Get'
@@ -79,10 +81,38 @@ class Run {
       
       case 'Post':
         fetchedModel.apiUrl = postModel.apiUrl
+        fetchedModel.apiType = postModel.apiType
         fetchedModel.rateLimit = postModel.rateLimit
         fetchedModel.dependencies = postModel.dependencies
         fetchedModel.templateLoaded = 'Post'
         fetchedModel.template = postModel.template
+        break
+
+      case 'Put':
+        fetchedModel.apiUrl = putModel.apiUrl
+        fetchedModel.apiType = putModel.apiType
+        fetchedModel.rateLimit = putModel.rateLimit
+        fetchedModel.dependencies = putModel.dependencies
+        fetchedModel.templateLoaded = 'Put'
+        fetchedModel.template = putModel.template
+        break
+
+      case 'Delete':
+        fetchedModel.apiUrl = deleteModel.apiUrl
+        fetchedModel.apiType = deleteModel.apiType
+        fetchedModel.rateLimit = deleteModel.rateLimit
+        fetchedModel.dependencies = deleteModel.dependencies
+        fetchedModel.templateLoaded = 'Delete'
+        fetchedModel.template = deleteModel.template
+        break
+
+      case 'Health':
+        fetchedModel.apiUrl = healthModel.apiUrl
+        fetchedModel.apiType = healthModel.apiType
+        fetchedModel.rateLimit = healthModel.rateLimit
+        fetchedModel.dependencies = healthModel.dependencies
+        fetchedModel.templateLoaded = 'Health'
+        fetchedModel.template = healthModel.template
         break
 
       default:
@@ -187,7 +217,7 @@ class Run {
    * @param   {String}  modelName The name of the model
    * @return  {Promise}           A promise once the curl command has completed
    */
-  runPostCmd (header, apiUrl, modelName) {
+  runCmd (header, apiUrl, apiType, modelName) {
     if (!header) return
 
     const startTime = Date.now()
@@ -203,7 +233,7 @@ class Run {
        * @param   ${this.apiUrl}                      API url
        */
       const cmd = cp.exec(
-        `curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '${JSON.stringify(header)}' ${apiUrl}`
+        `curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -X ${apiType} -d '${JSON.stringify(header)}' ${apiUrl}`
         , function (error, stdout, stderr) {
           // Log the error and resolve to ensure tests continue
           if (error) {
@@ -291,7 +321,7 @@ class Run {
   }
 
   /**
-   * Spawn a batch of tests, utilizing the runPostCmd and generateHeader methods.
+   * Spawn a batch of tests, utilizing the runCmd and generateHeader methods.
    * @param   {Object}    template    An object of the models template
    * @param   {Integer}   chunkSize   Batch size
    * @param   {Integer}   iteration   Current position in the loop
@@ -304,6 +334,7 @@ class Run {
     chunkSize = options.howManyRequestsToSpawn,
     iteration = 0,
     apiUrl = this.apiUrl,
+    apiType = this.apiType,
     modelName = this.templateLoaded,
     batch
   ) {
@@ -337,7 +368,7 @@ class Run {
         this.generateHeader(template, i)
           .then((header) => {
             // Once the header has been generated, run the curl command
-            return this.runPostCmd(header, apiUrl, modelName)
+            return this.runCmd(header, apiUrl, apiType, modelName)
           })
           .then(() => {
             if (!this.isProcessingDependencies) {
@@ -442,6 +473,11 @@ class Run {
       .catch((error) => {
         this.logger.createLogFile()
         throw new Error(error)
+      })
+      .finally(() => {
+        if (this.model.postHook) {
+          cp.exec(`curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -X ${apiType} ${apiUrl}`)
+        }
       })
   }
 }

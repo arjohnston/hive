@@ -13,31 +13,41 @@ const port = 3000
 startServer()
 
 function startServer() {
+    // Return if healthy
     app.get('/health', (req, res) => {
         res.sendStatus(200)
     })
 
+    // Get the specific record
     app.get('/', (req, res) => {
         res.status(200).send('Hello World!')
     })
     
+    // Create the specific record
     app.post('/', (req, res) => {
         res.status(200).send('Got a POST request')
     })
     
+    // Update the specific record
     app.put('/user', (req, res) => {
         res.send('Got a PUT request at /user')
     })
     
+    // Remove the specified record
     app.delete('/user', (req, res) => {
         res.send('Got a DELETE request at /user')
+    })
+
+    // Remove the entire database
+    app.delete('/clear', (req, res) => {
+        res.send('Got a clear request')
     })
     
     app.listen(port, '0.0.0.0', () => {
       console.log(`Server listening on port: ${port}`)
 
       console.log('\nTo connect to this server from another computer, get the local IP address of this computer')
-      console.log('And query against the routes (postman, browser, load-test) with the IP address:3000')
+      console.log('And query against the routes (postman, browser, load-test) with the IP-address:3000')
     })
 }
 
