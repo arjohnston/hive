@@ -1,15 +1,14 @@
 const options = require('../options.js')
 
 module.exports = {
-  dependencies: ['Post'],
-  apiUrl: '/user',
+  dependencies: [],
+  apiUrl: '/user/',
   apiType: 'DELETE',
-  rateLimit: 1150,
+  rateLimit: 10000,
   template: {
-    name: {
-      seed: options.nameSeed,
-      unique: false
+    id: {
+      seed: options.idSeed,
+      unique: true
     },
-  },
-  postHook: '/clear'
+  }
 }

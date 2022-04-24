@@ -10,9 +10,10 @@
  * @param   {Integer}   amountOfRequests  Total amount
  * @param   {Integer}   rateLimit         Limit amount
  * @param   {String}    apiUrl            API to be passed to the callback
+ * @param   {String}    apiType           http type (POST, PUT, DELETE, GET, etc.)
  * @param   {String}    modelName         Name of the model to be passed to the callback
  */
-module.exports = async function throttle (callback, model, amountOfRequests, rateLimit, apiUrl, modelName) {
+module.exports = async function throttle (callback, model, amountOfRequests, rateLimit, apiUrl, apiType, modelName) {
   // Get the number of batches
   // Round up to account for left over from full-batch sizes
   const numberOfChunks = rateLimit ? Math.ceil(amountOfRequests / rateLimit) : 1
@@ -38,7 +39,7 @@ module.exports = async function throttle (callback, model, amountOfRequests, rat
 
     // Asynchronously call the callback, and wait for the callback to
     // return it's promise before continuing
-    await callback(model, chunkSize, iteration, apiUrl, modelName, i + 1)
+    await callback(model, chunkSize, iteration, apiUrl, apiType, modelName, i + 1)
 
     // Utilize the following function to send the batches on a time-basis, rather than
     // once one batch is complete before sending the next

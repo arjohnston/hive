@@ -12,9 +12,9 @@ const cp = require('child_process')
 // that's required for the API
 const postModel = require('./models/Post.js')
 const getModel = require('./models/Get.js')
-const getModel = require('./models/Put.js')
-const getModel = require('./models/Delete.js')
-const getModel = require('./models/Health.js')
+const putModel = require('./models/Put.js')
+const deleteModel = require('./models/Delete.js')
+const healthModel = require('./models/Health.js')
 
 // Get the arguments passed into this file
 // For example: node run.js --post
@@ -117,7 +117,8 @@ class Run {
 
       default:
         fetchedModel.model = null
-    }
+    
+      }
 
     // Return the model's information
     return fetchedModel
@@ -153,23 +154,23 @@ class Run {
     let model = {}
 
     // Set the model for the Register API
-    if (args.toString().toLowerCase().includes('get')) {
+    if (args.toString().toLowerCase().includes('--get')) {
       model = this.fetchModel('Get')
     }
 
-    if (args.toString().toLowerCase().includes('post')) {
+    if (args.toString().toLowerCase().includes('--post')) {
       model = this.fetchModel('Post')
     }
 
-    if (args.toString().toLowerCase().includes('put')) {
+    if (args.toString().toLowerCase().includes('--put')) {
       model = this.fetchModel('Put')
     }
 
-    if (args.toString().toLowerCase().includes('delete')) {
+    if (args.toString().toLowerCase().includes('--delete')) {
       model = this.fetchModel('Delete')
     }
 
-    if (args.toString().toLowerCase().includes('health')) {
+    if (args.toString().toLowerCase().includes('--health')) {
       model = this.fetchModel('Health')
     }
 
@@ -177,6 +178,7 @@ class Run {
 
     // Set the variables with the model information
     this.apiUrl = model.apiUrl
+    this.apiType = model.apiType
     this.rateLimit = model.rateLimit // If a limit is known (e.g. register = 775), then it will batch requests
     this.dependencies = model.dependencies // Any dependencies (e.g. Ping requires an assocated registered user)
     this.templateLoaded = model.templateLoaded // Name of the template loaded
@@ -253,7 +255,7 @@ class Run {
 
               // Log a successful test if the response code is 200
               // Otherwise, log an error
-              const msg = stdout.indexOf('200') > -1 ? `[ ${modelName.toLowerCase()} ] Successfully received response in ${completedIn}ms` : `[ ${modelName.toLowerCase()} ] There was an issue, response in ${completedIn}ms`
+              const msg = stdout.indexOf('200') > -1 ? `[ ${modelName.toLowerCase()} ] Successfully received response in ${completedIn}ms` : `[ ${modelName.toLowerCase()} ] There was an issue, response in ${completedIn}ms: ${stdout}`
 
               // Ensure the message is populated and log the commands response
               if (msg !== '') this.logger.log(msg)
@@ -326,6 +328,7 @@ class Run {
    * @param   {Integer}   chunkSize   Batch size
    * @param   {Integer}   iteration   Current position in the loop
    * @param   {String}    apiUrl      the URL for the API
+   * @param   {String}    apiType     http type (POST, PUT, DELETE, GET, etc.)
    * @param   {String}    modelName   Name of the model
    * @return  {Object}                Promise once all tests are completed
    */
@@ -367,8 +370,12 @@ class Run {
         // Generate the header information
         this.generateHeader(template, i)
           .then((header) => {
+            let id = ''
+            if (apiType === 'PUT' || apiType === 'DELETE' || apiType === 'GET') {
+              id = header.id ?? ''
+            }
             // Once the header has been generated, run the curl command
-            return this.runCmd(header, apiUrl, apiType, modelName)
+            return this.runCmd(header, `${apiUrl}${id}`, apiType, modelName)
           })
           .then(() => {
             if (!this.isProcessingDependencies) {
@@ -402,8 +409,6 @@ class Run {
    */
   async run () {
     // Set the logger with the test information
-    this.logger.testStartTime = this.testStartTime
-    this.logger.testStartDate = this.testStartDate
     this.logger.verbose = this.verbose
 
     // Initiate a progress bar in the terminal
@@ -429,7 +434,7 @@ class Run {
           // Spawn the test for the associated dependency model
           // Throttle is wrapped around spawn tests to batch process the tests
           // in the case there is a rate limit
-          throttle(this.spawnTests, model.template, options.howManyRequestsToSpawn, model.rateLimit, `${this.ipAddress}${this.apiUrl}`, modelName)
+          throttle(this.spawnTests, model.template, options.howManyRequestsToSpawn, model.rateLimit, `${this.ipAddress}${this.apiUrl}`, model.apiType, modelName)
             .then(() => {
               // Once successful, resolve
               resolve()
@@ -445,6 +450,12 @@ class Run {
       await Promise.all(promises)
     }
 
+    // Ensure we have the correct time after the dependencies are gathered
+    this.testStartTime = Date.now()
+    this.testStartDate = new Date().toISOString()
+    this.logger.testStartTime = this.testStartTime
+    this.logger.testStartDate = this.testStartDate
+
     // Log a blank line to separate depedencies and the test
     // if (this.isProcessingDependencies) this.logger.log('\n')
     this.logger.log(`\nProcessing tests for ${this.templateLoaded}`)
@@ -455,8 +466,8 @@ class Run {
 
     // Spawn the test for the associated model
     // Throttle is wrapped to batch process the tests if there is a rate limit
-    throttle(this.spawnTests, this.model, options.howManyRequestsToSpawn, this.rateLimit, `${this.ipAddress}${this.apiUrl}`)
-      .then(() => {
+    throttle(this.spawnTests, this.model, options.howManyRequestsToSpawn, this.rateLimit, `${this.ipAddress}${this.apiUrl}`, this.apiType)
+      .then(async () => {
         // Once the test has been compeleted, log the associated information
         this.logger.currentRequestCount = this.currentRequestCount
         this.logger.resultCount = this.resultCount
@@ -473,11 +484,6 @@ class Run {
       .catch((error) => {
         this.logger.createLogFile()
         throw new Error(error)
-      })
-      .finally(() => {
-        if (this.model.postHook) {
-          cp.exec(`curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -X ${apiType} ${apiUrl}`)
-        }
       })
   }
 }

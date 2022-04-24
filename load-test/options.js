@@ -11,10 +11,10 @@ module.exports = {
   verbose: false,
 
   // Seeds for consistency when testing
-  nameSeed: 'Test User',
+  idSeed: 'id-',
 
   // Set the below integer to how many times the POST request should for
-  howManyRequestsToSpawn: 100,
+  howManyRequestsToSpawn: 100000,
 
   // How long to wait for the API to respond before timing out
   timeoutDuration: 120 // seconds

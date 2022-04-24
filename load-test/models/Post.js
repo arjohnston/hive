@@ -4,12 +4,11 @@ module.exports = {
   dependencies: [],
   apiUrl: '/',
   apiType: 'POST',
-  rateLimit: 1150,
+  rateLimit: 10000,
   template: {
-    name: {
-      seed: options.nameSeed,
-      unique: false
+    id: {
+      seed: options.idSeed,
+      unique: true
     },
-  },
-  postHook: '/clear'
+  }
 }

@@ -4,6 +4,6 @@ module.exports = {
   dependencies: [],
   apiUrl: '/health',
   apiType: 'GET',
-  rateLimit: 1150,
+  rateLimit: 10,
   template: {},
 }
